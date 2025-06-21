@@ -1,5 +1,20 @@
 package main
 
+// Task:
+// Context-Aware Worker Pool
+//
+// Write a Go program that:
+//
+// Spawns 3 worker goroutines.
+// Each worker:
+// Waits on a jobs channel`
+// Prints the job ID (like Processing job 1)
+// Sleeps 1 second to simulate work
+// Listens for ctx.Done() to exit gracefully
+// main():
+// Sends 10 jobs into the channel
+// Cancels everything after 5 seconds using context.WithTimeout
+
 import (
 	"context"
 	"fmt"

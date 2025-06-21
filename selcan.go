@@ -1,5 +1,14 @@
 package main
 
+// Task:
+// Context Cancellation with select
+//
+// Write a program that:
+//
+// Starts a goroutine that prints a message every second.
+// Cancels the goroutine after 3 seconds using context.WithCancel.
+// Uses select inside the goroutine to listen for the cancel signal.
+
 import (
 	"context"
 	"fmt"
