@@ -20,18 +20,28 @@ package main
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 )
 
-func work(ctx context.Context, jobs chan int, results chan int) {
+func work(ctx context.Context, jobs chan int, results chan int, wg *sync.WaitGroup) {
+	defer wg.Done()
 	for {
 		select {
 		case <-ctx.Done():
 			fmt.Println("Im done")
 			return
-		case job := <-jobs:
-			results <- job * 2
+		case job, ok := <-jobs:
+			if !ok {
+				fmt.Println("Jobs channel is closed")
+				return
+			}
 			time.Sleep(1 * time.Second)
+			select {
+			case <-ctx.Done():
+				return
+			case results <- job * 2:
+			}
 		}
 	}
 }
@@ -39,6 +49,38 @@ func work(ctx context.Context, jobs chan int, results chan int) {
 func main() {
 	jobs := make(chan int, 10)
 	results := make(chan int, 10)
-	for i := range 3 {
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	var wg sync.WaitGroup
+
+	for i := 0; i < 3; i++ {
+		wg.Add(1)
+		go work(ctx, jobs, results, &wg)
+	}
+
+	for i := range 10 {
+		jobs <- i
+	}
+	close(jobs)
+
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	for {
+		select {
+		case <-ctx.Done():
+			fmt.Println("Cancelling work")
+			return
+		case result, ok := <-results:
+			if !ok {
+				fmt.Println("results channel is closed")
+				return
+			}
+			fmt.Println(result)
+		}
 	}
 }
